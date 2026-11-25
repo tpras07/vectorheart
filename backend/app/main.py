@@ -418,3 +418,6 @@ app.include_router(stage3_router)
 
 from app.literature import router as literature_router
 app.include_router(literature_router)
+
+from app.evolution import router as evolution_router
+app.include_router(evolution_router)

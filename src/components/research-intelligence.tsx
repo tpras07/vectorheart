@@ -1,4 +1,6 @@
 "use client";
+
+import { ResearchLoading } from "./research-loading";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X } from "lucide-react";
@@ -32,7 +34,8 @@ export function ResearchIntelligence({project}:{project:Project}){
   return <><button className="text-button intelligence-control" onClick={()=>setOpen(true)}><Sparkles size={15} strokeWidth={1.5}/>Research Intelligence</button>{open&&<dialog ref={dialog} className="intelligence-dialog" aria-labelledby="intelligence-title" onCancel={()=>setOpen(false)}>
     <header className="intelligence-heading"><div><h2 id="intelligence-title">Research Intelligence</h2><p>Explore ideas. Review what enters your research.</p></div><button className="icon-button" onClick={close} aria-label="Close Research Intelligence"><X size={19}/></button></header>
     <details className="intelligence-providers"><summary>Provider availability</summary><ProviderAvailability/></details>
-    <div className="intelligence-conversation" aria-live="polite">{!conversation&&<p>Opening the research conversation…</p>}{conversation?.messages.map(m=><article key={m.id} className="intelligence-message"><p className="eyebrow">{m.role==='user'?'YOU':m.provenance.provider||'RESEARCH INTELLIGENCE'} · {m.mode}{m.provenance.model?` · ${m.provenance.model}`:''}</p><div className="intelligence-answer">{m.status==='running'?'Inference pending. Refresh to check its recorded state.':m.content}</div>
+    <ResearchLoading active={busy && !running} label="Processing research request…" />
+    <div className="intelligence-conversation" aria-live="polite">{!conversation&&!error&&<ResearchLoading label="Opening your research conversation…" />}{conversation?.messages.map(m=><article key={m.id} className="intelligence-message"><p className="eyebrow">{m.role==='user'?'YOU':m.provenance.provider||'RESEARCH INTELLIGENCE'} · {m.mode}{m.provenance.model?` · ${m.provenance.model}`:''}</p><div className="intelligence-answer">{m.status==='running'?<ResearchLoading label="Preparing research response…" detail="Inference pending. Refresh to check its recorded state." />:m.content}</div>
       {m.context.truncated&&<p className="field-help">Only a bounded subset of the project was supplied.</p>}
       {(m.response_details.uncertainties?.length||m.response_details.limitations?.length)? <details><summary>Uncertainties and limitations</summary>{[...(m.response_details.uncertainties||[]),...(m.response_details.limitations||[])].map((v,i)=><p className="field-help" key={i}>{v}</p>)}</details>:null}
       {m.context.object_revisions&&<details><summary>Scientific context used</summary>{m.context.object_revisions.map(o=><p className="field-help" key={o.id}><Link href={`/projects/${project.id}/notebook#research-${o.id}`} onClick={close}>{project.objects.find(v=>v.id===o.id)?.title||o.id} · revision {o.revision_number}</Link></p>)}</details>}

@@ -1,7 +1,9 @@
 "use client";
 
+import { ResearchLoading } from "./research-loading";
+
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import { formatDate, type Project, type ResearchObject } from "@/lib/projects";
 import { kernel } from "@/lib/kernel-repository";
 import { useWorkspace } from "./workspace-provider";
@@ -10,8 +12,9 @@ type Revision = { revision_id: string; revision_number: number; title_snapshot: 
 type Draft = { title: string; body: string; tags: string[]; linked_object_ids: string[] };
 function fields(object: ResearchObject): Draft { return { title: object.title, body: object.body, tags: (object.metadata?.tags as string[]) ?? [], linked_object_ids: (object.metadata?.linked_object_ids as string[]) ?? [] }; }
 
-export function JournalEntry({ object, project }: { object: ResearchObject; project: Project }) {
+export function JournalEntry({ object, project, collapsible = false, defaultOpen = true }: { object: ResearchObject; project: Project; collapsible?: boolean; defaultOpen?: boolean }) {
   const { registerSaver, draftChanged } = useWorkspace();
+  const [expanded, setExpanded] = useState(defaultOpen);
   const [draft, setDraft] = useState(() => fields(object));
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(true);
@@ -62,7 +65,21 @@ export function JournalEntry({ object, project }: { object: ResearchObject; proj
       }
     } catch (e) { setError(String(e)); }
   }
-  return <article id={`research-${object.id}`} className="journal-entry" aria-label={`Journal: ${draft.title || "Untitled entry"}`}>
+  useEffect(() => {
+    if (!collapsible) return;
+    const openLinked = () => {
+      if (window.location.hash === `#research-${object.id}`) setExpanded(true);
+    };
+    openLinked();
+    window.addEventListener("hashchange", openLinked);
+    return () => window.removeEventListener("hashchange", openLinked);
+  }, [collapsible, object.id]);
+  const contentId = `journal-content-${object.id}`;
+  return <article id={`research-${object.id}`} className={collapsible ? "journal-entry journal-card" : "journal-entry"} aria-label={`Journal: ${draft.title || "Untitled entry"}`}>
+    {collapsible && <button type="button" className="journal-card-toggle" aria-expanded={expanded} aria-controls={contentId} onClick={() => setExpanded(value => !value)}>
+      <span className="journal-card-text"><span className="journal-card-meta">{formatDate(object.createdAt)} · {error ? "Save needs review" : saved ? "Saved locally" : "Unsaved writing"}</span><strong>{draft.title.trim() || "Untitled journal entry"}</strong>{!expanded && <span className="journal-card-preview">{draft.body.trim().replace(/\s+/g, " ") || "No writing yet."}</span>}</span><ChevronDown size={20} />
+    </button>}
+    <div id={contentId} className={collapsible ? "journal-card-content" : undefined} hidden={collapsible && !expanded}>
     <div className="journal-dateline"><time dateTime={object.createdAt}>{formatDate(object.createdAt)}</time><span role="status">{saved ? "Saved locally" : "Unsaved writing"}</span></div>
     <input aria-label="Journal title" className="entry-title" value={draft.title} onChange={e => edit({ title:e.target.value })} placeholder="A day of research" maxLength={120} />
     <textarea aria-label="Journal writing" className="entry-body journal-writing" rows={8} value={draft.body} onChange={e => {e.target.style.height="auto";e.target.style.height=`${e.target.scrollHeight}px`;edit({ body:e.target.value });}} placeholder="What did you notice, question, or come to understand today?" maxLength={1000000} />
@@ -74,6 +91,7 @@ export function JournalEntry({ object, project }: { object: ResearchObject; proj
       {history?.map(r => <details key={r.revision_id}><summary>Revision {r.revision_number} · {formatDate(r.created_at)}</summary><h4>{r.title_snapshot}</h4><p className="preserve-writing">{r.body_snapshot}</p></details>)}
     </details>
     {error && <div role="alert"><p>{error}</p><p>Your current draft remains here. Copy it before closing this page.</p><button className="text-button" onClick={() => void retry()}>Review and retry saving</button><button className="text-button" onClick={() => void viewHistory()}>Inspect saved revisions</button></div>}
+    </div>
   </article>;
 }
 
@@ -86,10 +104,11 @@ export function ResearchJournal({ project }: { project: Project }) {
     try { await sync(); await kernel(`projects/${project.id}/journal`, "POST", { id: crypto.randomUUID(), title: "", body: "" }); await sync(); }
     catch (e) { setError(String(e)); } finally { setBusy(false); }
   }
-  return <section aria-label="Research journal" className="research-journal">
-    <div className="entries-heading"><h3>Research journal</h3><button className="text-button" disabled={busy} onClick={() => void add()}><Plus size={16} />New journal entry</button></div>
+  return <section aria-label="Research journal" className="research-journal notebook-card">
+    <ResearchLoading active={busy} label="Preparing journal entry…" />
+    <div className="entries-heading"><h3>Research journal <span>{entries.length}</span></h3><button className="text-button" disabled={busy} onClick={() => void add()}><Plus size={16} />New journal entry</button></div>
     {!entries.length && <p className="notebook-empty">Write freely. Your questions, observations and unfinished ideas belong here.</p>}
     {error && <p role="alert">{error}</p>}
-    {entries.map(object => <JournalEntry key={object.id} object={object} project={project} />)}
+    <div className="journal-card-list">{entries.map((object, index) => <JournalEntry key={object.id} object={object} project={project} collapsible defaultOpen={index === 0} />)}</div>
   </section>;
 }

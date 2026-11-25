@@ -1,5 +1,7 @@
 "use client";
 
+import { ResearchLoading } from "./research-loading";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Network, Sparkles, X } from "lucide-react";
 import { type Project, type ResearchObject } from "@/lib/projects";
@@ -124,6 +126,8 @@ export function GraphIntelligence({ project, onOverlay, inspection, closeInspect
       selectedRef.current = next.id; setSelected(next.id); await refresh();
     } catch (e) { setError(String(e)); } finally { setBusy(false); }
   }
+  const processing = busy || run?.status === "queued" || run?.status === "running";
+  const processingLabel = run?.kind === "accelerate" ? "Preparing research proposals…" : run?.kind === "graph" ? "Preparing the research graph…" : "Preparing scientific investigation…";
   const proposal = proposals.find(p => inspection === `proposal-${p.id}`);
   const interpreted = run?.output.nodes?.find(n => inspection === n.id);
   const interpretedEdge = run?.output.edges?.find(e => inspection === `preview-${e.id}`);
@@ -132,6 +136,7 @@ export function GraphIntelligence({ project, onOverlay, inspection, closeInspect
       <div><button className="text-button accelerate-action" disabled={busy} onClick={() => void start("accelerate")}><Sparkles size={17} />AI Accelerate</button><small>{reasoningConfiguration || "Reading model configuration…"}</small></div>
       <details ref={investigationDetails} className="investigate-launch"><summary>Investigate with tools</summary><small>{reasoningConfiguration}</small><label>Investigative objective<textarea ref={investigationInput} aria-label="Investigation objective" value={objective} onChange={e => setObjective(e.target.value)} maxLength={10000} placeholder="What should we try to distinguish or understand?" /></label><label>Maximum reasoning steps<select aria-label="Maximum investigation steps" value={maxSteps} onChange={e => setMaxSteps(Number(e.target.value))}>{[1, 2, 3, 4, 5].map(v => <option key={v}>{v}</option>)}</select></label><p>Registered tools only. Each experiment pauses for approval.</p><button className="text-button" disabled={busy || !objective.trim()} onClick={() => void start("investigate")}>Begin bounded investigation</button></details>
     </div>
+    <ResearchLoading active={processing} label={busy ? "Processing research request…" : processingLabel} detail="The scientific workspace remains available while the request is in progress." />
     {error && <p role="alert">{error}</p>}
     {runs.length > 0 && <div className="graph-run-state"><select aria-label="Research run history" value={selected} onChange={e => { selectedRef.current = e.target.value; setSelected(e.target.value); void refresh(); }}>{runs.map(r => <option key={r.id} value={r.id}>{r.kind} · {r.status} · {r.id.slice(0, 8)}</option>)}</select><span role="status">{run?.status.replaceAll("_", " ")} · {run?.model_requests} model requests · {run?.tool_executions} tool executions</span>
       {run?.status === "review" && <><button className="text-button" disabled={busy} onClick={() => void action("accept-graph")}>Accept graph interpretation</button><button className="text-button" disabled={busy} onClick={() => void action("reject-graph", { rationale })}>Reject graph preview</button></>}

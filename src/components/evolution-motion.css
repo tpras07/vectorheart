@@ -1,0 +1,50 @@
+/* Draw the recorded history in order, then keep the existing node ripples alive. */
+.evolution-growth-waiting .evolution-growing-edge,
+.evolution-growth-waiting .evolution-growing-node {
+  opacity: 0;
+}
+.evolution-growth .evolution-growing-edge {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  stroke-linecap: round;
+  animation: vh-branch-grow 220ms linear both;
+}
+.evolution-growth .evolution-growing-node {
+  animation: vh-milestone-arrive 260ms ease-out both;
+}
+@keyframes vh-branch-grow {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes vh-milestone-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.evolution-page button.evolution-view-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.evolution-page button.evolution-view-control:focus-visible {
+  outline: 2px solid #7040c2;
+  outline-offset: 3px;
+}
+.evolution-max-layout.evolution-max-graph-only {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+@media (prefers-reduced-motion: reduce) {
+  .evolution-growth-waiting .evolution-growing-edge,
+  .evolution-growth-waiting .evolution-growing-node,
+  .evolution-growth .evolution-growing-node { opacity: 1; animation: none; }
+  .evolution-growth .evolution-growing-edge { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
+}
+
+/* A compact shape key shared by the inline and maximized charts. */
+.evolution-shape-legend { display:flex; flex-wrap:wrap; gap:5px 16px; padding:8px 0; color:#655576; font-size:11px; flex:none; }
+.evolution-shape-legend span { display:inline-flex; align-items:center; gap:4px; }
+.evolution-shape-legend svg { flex:none; }
+.evolution-node:focus-visible .evolution-marker { filter:drop-shadow(0 0 3px #7040c2); }
+.evolution-marker { pointer-events:none; }

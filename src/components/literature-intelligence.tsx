@@ -1,5 +1,7 @@
 "use client";
 
+import { ResearchLoading } from "./research-loading";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, X } from "lucide-react";
 import { kernel } from "@/lib/kernel-repository";
@@ -72,6 +74,7 @@ export function LiteratureIntelligence({project,onOverlay,inspection,closeInspec
   function close(){setExternalSource(null);setExternalSnapshot(null);closeInspection();}
   const visibleAssociations=proposal?[proposal]:inspected?.associations ?? [];
   return <section className="literature-intelligence" aria-label="Literature Intelligence">
+    <ResearchLoading active={busy || run?.status === "queued" || run?.status === "running"} label="Preparing literature results…" detail="Waiting for the scholarly research operation to finish." />
     <div className="literature-actions"><BookOpen size={16}/><button className="text-button" disabled={busy} onClick={()=>void start("ground")}>Ground in Literature</button><button className="text-button" disabled={busy} onClick={()=>void start("challenge")}>Challenge with Literature</button><button className="text-button" disabled={busy} onClick={()=>void start("explore",[])}>Explore Literature</button></div>
     {useModel && <ConfiguredModel project={project} role="Literature Analysis" />}
     <details className="literature-search-options"><summary>Search scope & identifiers</summary>

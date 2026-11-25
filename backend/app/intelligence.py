@@ -136,7 +136,9 @@ def perform_turn(pid,cid,data,context_override=None,instructions='',run_provenan
                         if p.action_type=='propose_relationship' and s.scalar(select(Relationship).where(Relationship.project_id==pid,Relationship.source_object_id==p.source_object_id,Relationship.target_object_id==p.target_object_id,Relationship.relationship_type==p.relationship_type)):
                             raise ValueError('This directed relationship already exists; no duplicate proposal is needed.')
                 except (ValueError,k.Problem) as exc:rejected.append({'index':i,'reason':str(exc) if isinstance(exc,ValueError) else exc.message});continue
-                s.add(ResearchProposal(project_id=pid,source_message_id=mid,action_type=p.action_type,payload=payload,source_references=p.referenced_object_ids,provenance=msg.provenance))
+                proposal_record=ResearchProposal(project_id=pid,source_message_id=mid,action_type=p.action_type,payload=payload,source_references=p.referenced_object_ids,provenance=msg.provenance)
+                s.add(proposal_record);s.flush()
+                k.event(s,pid,'intelligence_proposal_generated',p.referenced_object_ids,{'proposal_id':proposal_record.id,'title':p.title,'action_type':p.action_type,'message_id':mid,'provider':name,'model':model},actor='model')
             tool=None
             if response.tool_request:
                 from app.literature import validate_tool

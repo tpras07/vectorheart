@@ -1,4 +1,6 @@
 "use client";
+
+import { ResearchLoading } from "./research-loading";
 import { useCallback, useEffect, useState } from "react";
 import { kernel } from "@/lib/kernel-repository";
 import { type Project } from "@/lib/projects";
@@ -31,6 +33,7 @@ export function ResearchActions({project}:{project:Project}) {
     await kernel(`${path}/operations`,'POST',{action_type:action,target_object_ids:[target],proposal_payload:payload});
   }
   return <section className="scientific-actions">
+    <ResearchLoading active={busy} label="Processing scientific operation…" detail="Results will appear when the operation returns." />
     <div className="flex gap-6 flex-wrap"><button className="text-button" aria-expanded={open} onClick={()=>setOpen(!open)}>Research Actions</button><button className="text-button accent" disabled={busy} onClick={()=>void perform(()=>kernel(`${path}/demo`,'POST',{}))}>Try the First Heartbeat</button></div>
     {error&&<p role="alert" className="storage-error">{error}</p>}
     {open&&<div className="overview-section"><label htmlFor="action-target">Research object</label><select id="action-target" value={target} onChange={e=>{setTarget(e.target.value);setStatement("");}}><option value="">Choose an entry…</option>{project.objects.filter(o=>['Note','Question','Hypothesis'].includes(o.type)).map(o=><option key={o.id} value={o.id}>{o.type}: {o.title||'Untitled'}</option>)}</select>
